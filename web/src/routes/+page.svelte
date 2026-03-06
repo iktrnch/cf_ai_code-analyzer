@@ -128,6 +128,9 @@ function merge(left, right) {
 				const res = await fetch(`${WORKER_BASE}/status/${sessionId}`);
 				const state: AnalysisState = await res.json();
 
+				// Skip if status hasn't been set yet
+				if (!state.status) return;
+
 				analysisState = state;
 
 				if (state.status === 'complete' || state.status === 'error') {
@@ -137,7 +140,7 @@ function merge(left, right) {
 			} catch (e) {
 				console.error('Poll error:', e);
 			}
-		}, 1000);
+		}, 1500); // bump to 1500ms — no need to hammer it every second
 	}
 
 	function loadExample() {
