@@ -95,10 +95,11 @@ ${code}`
 				.replace(/```/g, '')
 				.trim();
 
+			// Try to extract JSON object from the response
 			const parsed = extractObject(raw);
 
 			if (parsed) {
-				// Unwrap nested object if AI returned {"explanation": {"time":...}}
+				// Handle cases where the AI might wrap the response in an extra layer, e.g. {"response": {...}} or {"explanation": {...}}
 				const actual = (parsed.time ? parsed : (parsed.explanation ?? parsed)) as Record<
 					string,
 					unknown

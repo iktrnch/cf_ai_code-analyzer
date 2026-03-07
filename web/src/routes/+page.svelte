@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import hljs from 'highlight.js';
 
 	// --- Types ---
 	type ComplexityResult = {
@@ -40,11 +39,9 @@
 	const sessionId = sessionStorage.getItem('analyzerSession') ?? crypto.randomUUID();
 	sessionStorage.setItem('analyzerSession', sessionId);
 
-	const WORKER_BASE = `http://localhost:8787/api`;
-
 	const languages = ['python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'go', 'rust'];
 
-	// Example algorithm to help users get started
+	// Example algorithm to demo the tool
 	const examples: Record<string, string> = {
 		python: `def binary_search(arr, target):
     left, right = 0, len(arr) - 1
@@ -76,18 +73,6 @@ function merge(left, right) {
 }`
 	};
 
-	// Highlight code whenever it changes
-	$effect(() => {
-		if (code.trim()) {
-			try {
-				const result = hljs.highlight(code, { language });
-				highlightedCode = result.value;
-			} catch {
-				highlightedCode = code;
-			}
-		}
-	});
-
 	// Animate result sections in when analysis completes
 	$effect(() => {
 		if (analysisState.status === 'complete') {
@@ -105,7 +90,7 @@ function merge(left, right) {
 		analysisState = { status: 'running', result: null, error: null, code, language };
 
 		try {
-			const res = await fetch(`${WORKER_BASE}/analyse/${sessionId}`, {
+			const res = await fetch(`/api/analyse/${sessionId}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ code, language })
@@ -125,7 +110,7 @@ function merge(left, right) {
 
 		pollInterval = setInterval(async () => {
 			try {
-				const res = await fetch(`${WORKER_BASE}/status/${sessionId}`);
+				const res = await fetch(`/api/status/${sessionId}`);
 				const state: AnalysisState = await res.json();
 
 				// Skip if status hasn't been set yet
@@ -140,20 +125,27 @@ function merge(left, right) {
 			} catch (e) {
 				console.error('Poll error:', e);
 			}
-		}, 1500); // bump to 1500ms — no need to hammer it every second
+		}, 1500); // Continually poll every 1.5 seconds until complete or error
 	}
 
 	function loadExample() {
-		code = examples[language] ?? examples['python'];
+		// Load example code for the selected language, or default to Python if not available
+		code = examples[language];
+		if (!code) {
+			code = examples['python'];
+			language = 'python';
+		}
 	}
 
 	function reset() {
+		// Clear code and reset state to initial
 		if (pollInterval) clearInterval(pollInterval);
 		analysisState = { status: 'idle', result: null, error: null, code: null, language: null };
 	}
 
 	onMount(() => {
 		return () => {
+			// Make sure no intervals are left running when component unmounts
 			if (pollInterval) clearInterval(pollInterval);
 		};
 	});
@@ -161,13 +153,10 @@ function merge(left, right) {
 
 <svelte:head>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<!-- FONTS -->
 	<link
 		href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap"
 		rel="stylesheet"
-	/>
-	<link
-		rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
 	/>
 </svelte:head>
 
@@ -186,7 +175,14 @@ function merge(left, right) {
 			<div class="h-2 w-2 animate-pulse rounded-full bg-green-400"></div>
 			<span class="font-mono text-sm tracking-widest text-green-400 uppercase">AlgoLens</span>
 		</div>
-		<div class="font-mono text-xs tracking-wider text-[#444]">Powered by Cloudflare Workers AI</div>
+		<div class="flex flex-col gap-1 text-right font-mono text-xs tracking-wider text-[#444]">
+			<span>Powered by Cloudflare Workers AI</span>
+			<span>
+				Developed by <a href="https://github.com/iktrnch" class="underline hover:text-green-400"
+					>Illia Katerynych</a
+				>
+			</span>
+		</div>
 	</header>
 
 	<main class="relative z-10 mx-auto max-w-6xl px-8 py-12">
@@ -209,14 +205,14 @@ function merge(left, right) {
 			<div class="flex flex-col gap-4">
 				<!-- Language + controls bar -->
 				<div class="flex items-center justify-between">
-					<div class="flex gap-2">
+					<div class="flex flex-row flex-wrap gap-2 lg:grid-cols-4">
 						{#each languages as lang}
 							<button
 								onclick={() => (language = lang)}
 								class="rounded px-3 py-1.5 font-mono text-xs transition-all duration-150
                   {language === lang
 									? 'bg-green-400 font-bold text-black'
-									: 'border border-[#222] text-[#555] hover:border-[#333] hover:text-[#888]'}"
+									: 'border border-[#222] text-[#555] hover:border-[#333] hover:text-green-400'}"
 							>
 								{lang}
 							</button>
@@ -224,7 +220,7 @@ function merge(left, right) {
 					</div>
 					<button
 						onclick={loadExample}
-						class="font-mono text-xs text-[#444] transition-colors hover:text-green-400"
+						class="ml-2 min-w-fit self-stretch rounded border border-[#222] px-3 font-mono text-xs text-[#444] transition-colors hover:border-[#333] hover:text-green-400"
 					>
 						load example →
 					</button>

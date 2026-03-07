@@ -1,6 +1,7 @@
 import { Agent } from 'agents';
 import type { AnalysisResult } from '../workflows/analyse';
 
+// Responce structure for the analysis result stored in state
 type AnalysisState = {
 	status: 'idle' | 'running' | 'complete' | 'error';
 	result: AnalysisResult | null;
@@ -38,8 +39,7 @@ export class AnalysisAgent extends Agent<Env, AnalysisState> {
 				error: null
 			});
 
-			// Start the Workflow — this runs asynchronously
-			// We don't await it here — the frontend polls for the result
+			// Start the Workflow
 			const instance = await this.env.ANALYSIS_WORKFLOW.create({
 				params: { code, language }
 			});

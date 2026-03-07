@@ -8,17 +8,15 @@ export { AlgorithmAnalysisWorkflow } from './workflows/analyse';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// CORS middleware for API routes - allows requests from the frontend
 app.use('*', cors());
 
-// Plain HTTP routes BEFORE agentsMiddleware
-// These never get intercepted because Hono matches them first
-
+// Endpoint to analyse code - forwards the request to the appropriate Durable Object agent based on sessionId
 app.post('/api/analyse/:sessionId', async (c) => {
 	const sessionId = c.req.param('sessionId');
 	const { code, language } = await c.req.json();
 
 	// Get (or create) the Durable Object instance for this session
-	// This is like looking up a row by primary key
 	const agent = await getAgentByName(c.env.AnalysisAgent, sessionId);
 
 	// Forward the request to the agent's onRequest handler
@@ -32,6 +30,7 @@ app.post('/api/analyse/:sessionId', async (c) => {
 	return agent.fetch(agentRequest);
 });
 
+// Endpoint to check the status/responce of the analysis agent for a session
 app.get('/api/status/:sessionId', async (c) => {
 	const sessionId = c.req.param('sessionId');
 	const agent = await getAgentByName(c.env.AnalysisAgent, sessionId);
