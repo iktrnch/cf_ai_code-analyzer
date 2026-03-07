@@ -18,3 +18,6 @@ new_sqlite_classes = ["AnalysisAgent"]
 name = "algorithm-analysis"
 binding = "ANALYSIS_WORKFLOW"
 class_name = "AlgorithmAnalysisWorkflow"
+
+[assets]
+directory = "../web/build"
