@@ -152,6 +152,7 @@ function merge(left, right) {
 </script>
 
 <svelte:head>
+	<title>AlgoLens - Review your algorythms</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<!-- FONTS -->
 	<link
